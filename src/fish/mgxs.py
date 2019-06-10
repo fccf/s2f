@@ -237,6 +237,7 @@ class Material(object):
         # print (self.name + ' export cross-sections to the hdf5 file...')
         pref = '/xs/' + self.name
         h5file[pref + '/xs_t'] = self.xs_t
+        h5file[pref + '/xs_a'] = self.xs_a
         if self.nl >= 1:
             h5file[pref + '/xs_s0'] = self.xs_s0
         if self.nl >= 2:
