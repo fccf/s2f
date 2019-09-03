@@ -152,12 +152,13 @@ class Mesh(object):
         # ===========================================
         # domain group infomation
         er = np.zeros((ne), dtype=np.int64)
-
+        e = 0
         groupID = 1
         for grp in self.work_mesh.GetGroups(self.domain):
             for el in grp.GetIDs():
-                e = el - ne_t - 1
+               # e = el - ne_t - 1
                 er[e] = groupID
+                e = e + 1
             groupID = groupID + 1
         h5file[meshName + '/domain/er'] = er
         # ===========================================
@@ -180,10 +181,12 @@ class Mesh(object):
         er_b = np.zeros((ne_b), dtype=np.int64)
 
         groupID = 1
+        e = 0
         for grp in self.work_mesh.GetGroups(self.boundary):
             for el in grp.GetIDs():
-                e = el - ne_e - 1
+               # e = el - ne_e - 1
                 er_b[e] = groupID
+                e = e + 1
             groupID = groupID + 1
         h5file[meshName + '/boundary/er'] = er_b
 
