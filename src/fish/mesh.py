@@ -56,7 +56,7 @@ class Mesh(object):
         if(self.work_mesh.NbVolumes() > 0):
             self.nd = 3
             self.ne = self.work_mesh.NbVolumes()
-            self.ne_b = self.work_mesh.NbFaces()
+            self.ne_b = self.work_mesh.NbFaces() + self.work_mesh.NbEdges()
             self.domain = SMESH.VOLUME
             self.boundary = SMESH.FACE
         elif(self.work_mesh.NbFaces() > 0):
@@ -117,6 +117,7 @@ class Mesh(object):
             ne_t = ne_b
             enn = 2
             enn_b = 1
+
         # mesh.nodes
         nn = self.work_mesh.NbNodes()
         coo = np.zeros((nn, 3), dtype=np.float)
@@ -148,19 +149,6 @@ class Mesh(object):
         h5file[meshName + '/domain/eni'] = eni
         h5file[meshName + '/domain/id'] = eid
         h5file[meshName + '/domain/type'] = self.nd
-
-        # ===========================================
-        # domain group infomation
-        er = np.zeros((ne), dtype=np.int64)
-        e = 0
-        groupID = 1
-        for grp in self.work_mesh.GetGroups(self.domain):
-            for el in grp.GetIDs():
-               # e = el - ne_t - 1
-                er[e] = groupID
-                e = e + 1
-            groupID = groupID + 1
-        h5file[meshName + '/domain/er'] = er
         # ===========================================
         # mesh boundary (the boundary element contains inner boundary)
         eni_b = np.zeros((ne_b, enn_b), dtype=np.int64)
@@ -177,6 +165,30 @@ class Mesh(object):
         h5file[meshName + '/boundary/id'] = eid_b
         h5file[meshName + '/boundary/type'] = self.nd - 1
         # ===========================================
+        # domain group infomation
+        #
+        inv_eid = [self.work_mesh.NbGroups()+1 for el in range(self.work_mesh.NbElements())]
+        edgeIDs = self.work_mesh.GetElementsByType(SMESH.EDGE)
+        faceIDs = self.work_mesh.GetElementsByType(SMESH.FACE)
+        elemIDs = edgeIDs + faceIDs
+        if self.nd==3:
+            volumeIDs = self.work_mesh.GetElementsByType(SMESH.VOLUME)
+            elemIDs = elemIDs + volumeIDs
+        for el in range(self.work_mesh.NbElements()):
+            inv_eid[elemIDs[el]-1] = el+1
+
+        er = np.zeros((ne), dtype=np.int64)
+        e = 0
+        groupID = 1
+        for grp in self.work_mesh.GetGroups(self.domain):
+            for el in grp.GetIDs():
+                # e = el - ne_t - 1
+                e = inv_eid[el-1]-ne_t - 1
+                er[e] = groupID
+            groupID = groupID + 1
+        h5file[meshName + '/domain/er'] = er
+
+        # ===========================================
         # boundary group infomation ( the inner boundary ID is 0)
         er_b = np.zeros((ne_b), dtype=np.int64)
 
@@ -184,9 +196,8 @@ class Mesh(object):
         e = 0
         for grp in self.work_mesh.GetGroups(self.boundary):
             for el in grp.GetIDs():
-               # e = el - ne_e - 1
+                e = inv_eid[el-1]-1
                 er_b[e] = groupID
-                e = e + 1
             groupID = groupID + 1
         h5file[meshName + '/boundary/er'] = er_b
 
