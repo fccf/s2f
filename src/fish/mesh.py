@@ -196,7 +196,8 @@ class Mesh(object):
         e = 0
         for grp in self.work_mesh.GetGroups(self.boundary):
             for el in grp.GetIDs():
-                e = inv_eid[el-1]-1
+                e = inv_eid[el-1] - ne_e -  1
+                # e = el - ne_e -  1
                 er_b[e] = groupID
             groupID = groupID + 1
         h5file[meshName + '/boundary/er'] = er_b
